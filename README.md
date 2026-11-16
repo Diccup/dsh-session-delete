@@ -90,6 +90,6 @@ Copy-Item  -Recurse -Force $env:USERPROFILE\.dsh\plugins\_bak\dsh-session-delete
 
 ## 风险
 
-- **损坏 transcript 的会话**（2026-11-13 实测：`session-3706c529…` stored log is corrupt: SessionFormatError）：持久化句柄打不开，原保守流程只能停在 `storage-state-unknown`。本版加物理兜底 `physicallyRemoveCorruptSession`：仅当错误含 corrupt/SessionFormatError 时触发，要求在扫描根下**目录名 === sessionId 的唯一匹配**、内含 `session*.jsonl(.zstd)`、暂存搬移 + sameFile 身份复核全过才动手；任何一步拿不准回到原保守失败。硬删=删目录，软删=同样暂存后搬去隐藏区，文件字节零改动。
+- **损坏 transcript 的会话**（2026-11-13 实测：`session-<某会话>…` stored log is corrupt: SessionFormatError）：持久化句柄打不开，原保守流程只能停在 `storage-state-unknown`。本版加物理兜底 `physicallyRemoveCorruptSession`：仅当错误含 corrupt/SessionFormatError 时触发，要求在扫描根下**目录名 === sessionId 的唯一匹配**、内含 `session*.jsonl(.zstd)`、暂存搬移 + sameFile 身份复核全过才动手；任何一步拿不准回到原保守失败。硬删=删目录，软删=同样暂存后搬去隐藏区，文件字节零改动。
 - 主机半是 Node 侧代码，**改了必须完全退出 DSH 重开**才生效（2026-11-13 教训：维护方实测时进程里跑的还是旧版，浏览器半的能力探测因此会锁死软删选项）。浏览器半改动刷新页面即可。
 - 删掉的对话不可恢复（软删可用 `verify/restore-session.mjs` 找回）。当前正在聊的这条也能被删（确认后本视图清空，回到欢迎页）。
