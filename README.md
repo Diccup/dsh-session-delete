@@ -29,24 +29,33 @@
    - **硬删（永久）**：`POST`（`mode:'permanent'`），连历史文件一并删除，不可恢复。
 3. 失败时原因留在框里，不静默。
 
-硬删真正执行前，主机侧仍走 `delete-session.mjs` 那套保守流程：先停运行中的 agent、身份复核（`sameHeader`）、路径 confinement（拒绝符号链接与穿越）、只认 `{kind:'jsonl'}` 存储、暂存后再清理，失败语义为 `storage-partial` / `storage-state-unknown`（**不会**当成删除成功）。
+硬删真正执行前，主机侧仍走 `src\host\delete-session.mjs` 那套保守流程：先停运行中的 agent、身份复核（`sameHeader`）、路径 confinement（拒绝符号链接与穿越）、只认 `{kind:'jsonl'}` 存储、暂存后再清理，失败语义为 `storage-partial` / `storage-state-unknown`（**不会**当成删除成功）。
 
-## 装机（当前运行副本）
+## 怎么装
 
+DSH **不扫** `plugins\` 目录 —— 光把文件夹放进去、不注册，永远不会加载。
+三条都要做，缺一不加载：
+
+```text
+① 把整个包拷到  %USERPROFILE%\.dsh\plugins\dsh-session-delete\
+② 在 profile 的 package.json 里加一行：
+     "dsh-session-delete": "link:C:/Users/<你的用户名>/.dsh/plugins/dsh-session-delete"
+③ 在 profile 的 package.json 的 dsh.profile.bundles 数组末尾加 "dsh-session-delete"
+   并且**移除** "dsh-chat-manager" —— 它注册同一条路由，两个一起开必撞
+然后在 profile 目录跑一次 pnpm install，让它建好 node_modules 链接
 ```
-运行副本：%USERPROFILE%\.dsh\plugins\dsh-session-delete
-旧版备份：%USERPROFILE%\.dsh\plugins\_bak\dsh-session-delete-<日期>
-profile： %USERPROFILE%\.dsh\profiles\<你的profile名>\package.json
-          dependencies["dsh-session-delete"] = "link:C:/Users/<你的用户名>/.dsh/plugins/dsh-session-delete"
-          dsh.profile.bundles += "dsh-session-delete"
-          dsh.profile.bundles -= "dsh-chat-manager"      # 它注册同一条路由，留着会撞
-```
 
-槽 B `profiles\desktop\node_modules\dsh-session-delete` 是指向槽 A 的 junction，同步槽 A 即两边一致。
+> profile 目录看 `~\.dsh\profiles\` 下有哪些文件夹，通常就一个。
+> 装完**多数情况不用重启** —— 2026-11-07 实测左侧垃圾桶当场就出现。
+> 哪天装完看不见，再完全退出 DSH 重开一次。
+>
+> 备好旧版备份再装更稳：
+> ```powershell
+> Copy-Item -Recurse -Force $env:USERPROFILE\.dsh\plugins\dsh-session-delete `
+>            $env:USERPROFILE\.dsh\plugins\_bak\dsh-session-delete-<日期>
+> ```
 
-改完跑 `pnpm install`。**实测不用重启**：2026-11-07 装完后左侧垃圾桶当场就出现，维护方当场删掉一条对话成功（实现方先前"必须完全退出重开"那句判断错了）。宿主是什么时候把新 bundle 接上去的，实现方没有实测清楚，不编机理；哪天装完看不见，再完全退出 DSH 重开一次。
-
-## 回退（退回 1.0.0 纯硬删版）
+### 回退（退回 1.0.0 纯硬删版）
 
 ```powershell
 Remove-Item -Recurse -Force $env:USERPROFILE\.dsh\plugins\dsh-session-delete
@@ -73,7 +82,7 @@ Copy-Item  -Recurse -Force $env:USERPROFILE\.dsh\plugins\_bak\dsh-session-delete
 | 症状 | 证据 |
 |---|---|
 | 10/31 那次装完就没了 | `.plugin-manager\logs\operation-mU9Dhi\pnpm.log`：`- dsh-session-delete`，依赖被删；profile `package.json` 的 deps/bundles 里现在也没有它 → 根本没加载 |
-| 就算装回去也不显示 | 旧 `lib/client.js` 是 **ESM（`export function ...`）**，而 `./client` 导出指向它；宿主把浏览器半当脚本装载，`export` 直接语法不过 → 三个槽位一个都没注册。根 `client.js` 还 `require("dsh-session-delete/client")`，而这个包名不在 `dsh.client.inject` 授权表里，同样起不来 |
+| 就算装回去也不显示 | 旧 `lib/client.js` 是 **ESM（`export function ...`）**，而 `./client` 导出指向它；宿主把浏览器半当脚本装载，`export` 直接语法不过 → 三个槽位一个都没注册。根 `lib/client.js` 还 `require("dsh-session-delete/client")`，而这个包名不在 `dsh.client.inject` 授权表里，同样起不来 |
 | 版本对不上 | 本机是 DSH `0.2.2-rc.1`（`DeepSeek Harness.exe` FileVersion 0.2.2-rc.1），`dsh-chat-manager` 只测到 `0.2.2-alpha.3` |
 | 槽位本身没变 | 从 app.asar 取出的 `dsh-client-ui-workspace@0.2.2-rc.1` 仍声明 `sidebar.workspaces.session.menu.item` / `.row.action` / `shell.overlay`；`dsh-cordis-client-runner` 的服务目录里 `slots/locale/sessions/workspaces/uiWorkspace` 都在 |
 
