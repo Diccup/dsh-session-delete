@@ -1,0 +1,53 @@
+{
+  "name": "dsh-session-delete",
+  "version": "1.1.0",
+  "description": "DSH 本地最小插件：在左侧对话列表里删除一个对话——软删（归档，隐藏但保留 zstd 历史）或硬删（永久），只此一个功能。",
+  "type": "module",
+  "main": "./src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./client": "./lib/client.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib/client.js",
+    "src/index.js",
+    "src/host/delete-session.mjs",
+    "cordis.patch.yml",
+    "verify",
+    "README.md",
+    "LICENSE"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-primitives"
+      ]
+    }
+  },
+  "keywords": [
+    "dsh-plugin",
+    "deepseek-harness",
+    "session",
+    "delete"
+  ],
+  "author": "bubble",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/Diccup/dsh-session-delete.git"
+  },
+  "homepage": "https://github.com/Diccup/dsh-session-delete#readme",
+  "bugs": {
+    "url": "https://github.com/Diccup/dsh-session-delete/issues"
+  },
+  "engines": {
+    "node": "^22.19.0 || >=24.0.0",
+    "dsh": ">=0.2.1-rc.3"
+  }
+}
